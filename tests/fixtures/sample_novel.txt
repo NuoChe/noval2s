@@ -1,0 +1,2 @@
+# Copied from examples for test fixtures reference
+# See examples/sample-novel-chapters.txt

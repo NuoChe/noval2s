@@ -1,0 +1,4 @@
+{
+  "note": "Placeholder for malformed LLM response testing",
+  "invalid_json": "{ broken"
+}

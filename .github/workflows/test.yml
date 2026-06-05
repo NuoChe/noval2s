@@ -1,0 +1,44 @@
+name: Test
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run unit and integration tests (no real LLM)
+        run: pytest -q -m "not integration"
+
+      - name: Validate sample screenplay
+        run: novel2script validate examples/sample-screenplay.yaml
+
+  integration:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run real LLM integration tests
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: pytest -q -m integration

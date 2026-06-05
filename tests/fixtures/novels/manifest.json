@@ -1,0 +1,47 @@
+{
+  "locale": "zh-hans",
+  "wikisource_variant": "zh-hans",
+  "opencc_simplified": true,
+  "samples": [
+    {
+      "id": "niehaihua",
+      "title": "孽海花",
+      "author": "曾朴",
+      "source_url": "https://zh.wikisource.org/wiki/孽海花",
+      "license": "Public Domain",
+      "chapters_included": 3,
+      "word_count": 12341,
+      "file": "niehaihua.txt"
+    },
+    {
+      "id": "guanchang_xianxingji",
+      "title": "官场现形记",
+      "author": "李宝嘉",
+      "source_url": "https://zh.wikisource.org/wiki/官場現形記",
+      "license": "Public Domain",
+      "chapters_included": 3,
+      "word_count": 22047,
+      "file": "guanchang_xianxingji.txt"
+    },
+    {
+      "id": "ershi_nian",
+      "title": "二十年目睹之怪现状",
+      "author": "吴研人",
+      "source_url": "https://zh.wikisource.org/wiki/二十年目睹之怪現狀",
+      "license": "Public Domain",
+      "chapters_included": 3,
+      "word_count": 10217,
+      "file": "ershi_nian.txt"
+    },
+    {
+      "id": "laocan_youji",
+      "title": "老残游记",
+      "author": "刘鹗",
+      "source_url": "https://zh.wikisource.org/wiki/老殘遊記",
+      "license": "Public Domain",
+      "chapters_included": 3,
+      "word_count": 12159,
+      "file": "laocan_youji.txt"
+    }
+  ]
+}

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Novel2Script — AI 小说转剧本</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --border: #2d3a4f;
+      --text: #e7ecf3;
+      --muted: #8b9cb3;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #22c55e;
+      --error: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+    header { margin-bottom: 2rem; }
+    h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .subtitle { color: var(--muted); font-size: 0.95rem; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    label { display: block; font-size: 0.875rem; color: var(--muted); margin-bottom: 0.35rem; }
+    input[type="text"], input[type="file"] {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 600px) { .row { grid-template-columns: 1fr; } }
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.15s;
+    }
+    button:hover { background: var(--accent-hover); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #status { margin-top: 1rem; font-size: 0.9rem; }
+    #status.error { color: var(--error); }
+    #status.success { color: var(--success); }
+    #report {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    #yaml-output {
+      width: 100%;
+      min-height: 400px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      color: var(--text);
+      font-family: "Cascadia Code", "Fira Code", monospace;
+      font-size: 0.8rem;
+      resize: vertical;
+      display: none;
+    }
+    .actions { display: flex; gap: 0.75rem; margin-top: 1rem; }
+    .actions button { width: auto; flex: 1; }
+    .btn-secondary { background: var(--border); }
+    .btn-secondary:hover { background: #3d4f6a; }
+    footer { margin-top: 2rem; text-align: center; color: var(--muted); font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Novel2Script</h1>
+      <p class="subtitle">上传 3 章以上的小说文本，AI 自动转换为结构化 YAML 剧本初稿</p>
+    </header>
+
+    <div class="card">
+      <form id="convert-form">
+        <div class="row">
+          <div>
+            <label for="title">作品标题（可选）</label>
+            <input type="text" id="title" name="title" placeholder="自动从第一章推断">
+          </div>
+          <div>
+            <label for="author">作者（可选）</label>
+            <input type="text" id="author" name="author" placeholder="未知作者">
+          </div>
+        </div>
+        <label for="file">小说文件（TXT / MD，UTF-8）</label>
+        <input type="file" id="file" name="file" accept=".txt,.md" required>
+        <button type="submit" id="submit-btn">开始转换</button>
+      </form>
+      <div id="status"></div>
+    </div>
+
+    <div class="card" id="result-card" style="display:none">
+      <div id="report"></div>
+      <textarea id="yaml-output" readonly></textarea>
+      <div class="actions">
+        <button type="button" id="download-btn" class="btn-secondary">下载 YAML</button>
+        <button type="button" id="copy-btn" class="btn-secondary">复制内容</button>
+      </div>
+    </div>
+
+    <footer>
+      模型：{{ settings.llm_model }} · 最少 3 章 · 输出 YAML Schema v1.0
+    </footer>
+  </div>
+
+  <script>
+    const form = document.getElementById('convert-form');
+    const status = document.getElementById('status');
+    const resultCard = document.getElementById('result-card');
+    const yamlOutput = document.getElementById('yaml-output');
+    const reportDiv = document.getElementById('report');
+    const submitBtn = document.getElementById('submit-btn');
+    let downloadFilename = 'screenplay.yaml';
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.className = '';
+      status.textContent = '转换中，请稍候（约 2-5 分钟）...';
+      submitBtn.disabled = true;
+      resultCard.style.display = 'none';
+
+      const formData = new FormData(form);
+      try {
+        const resp = await fetch('/api/convert', { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || 'Conversion failed');
+
+        downloadFilename = data.filename || 'screenplay.yaml';
+        yamlOutput.value = data.yaml_content;
+        yamlOutput.style.display = 'block';
+
+        const r = data.report;
+        reportDiv.innerHTML = `
+          <strong>状态：</strong>${r.status} ·
+          <strong>场次：</strong>${r.stats.scenes} ·
+          <strong>角色：</strong>${r.stats.characters} ·
+          <strong>警告：</strong>${r.stats.warnings} ·
+          <strong>耗时：</strong>${r.duration_sec}s
+        `;
+        reportDiv.style.display = 'block';
+        resultCard.style.display = 'block';
+        status.className = 'success';
+        status.textContent = '转换完成！';
+      } catch (err) {
+        status.className = 'error';
+        status.textContent = '错误：' + err.message;
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    document.getElementById('download-btn').addEventListener('click', () => {
+      const blob = new Blob([yamlOutput.value], { type: 'text/yaml' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = downloadFilename;
+      a.click();
+    });
+
+    document.getElementById('copy-btn').addEventListener('click', () => {
+      navigator.clipboard.writeText(yamlOutput.value);
+      status.textContent = '已复制到剪贴板';
+      status.className = 'success';
+    });
+  </script>
+</body>
+</html>

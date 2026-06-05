@@ -1,0 +1,318 @@
+schema_version: "1.0"
+
+meta:
+  title: "晚风书店"
+  author: "示例作者"
+  adapted_by: "novel2script/1.0"
+  source:
+    format: novel
+    chapter_count: 3
+    chapters:
+      - id: chapter_01
+        title: "初遇"
+        word_count: 412
+      - id: chapter_02
+        title: "误会"
+        word_count: 358
+      - id: chapter_03
+        title: "和解"
+        word_count: 402
+  adaptation:
+    created_at: "2026-06-05T14:30:00+08:00"
+    model: "gpt-4o"
+    prompt_version: "v1.0"
+
+characters:
+  - id: char_zhou_mo
+    name: "周默"
+    aliases: []
+    description: "青年访客，对科幻小说有兴趣，执着而温和"
+    first_appearance:
+      scene_id: scene_001
+      chapter_id: chapter_01
+
+  - id: char_su_wan
+    name: "苏晚"
+    aliases: ["晚晚"]
+    description: "晚风书店店主，扎马尾，安静内敛"
+    first_appearance:
+      scene_id: scene_001
+      chapter_id: chapter_01
+
+locations:
+  - id: loc_bookstore
+    name: "晚风书店"
+    int_ext: interior
+    description: "老城区街角的小书店，科幻小说区在左侧"
+
+  - id: loc_bookstore_street
+    name: "晚风书店门口"
+    int_ext: exterior
+    description: "书店外的老旧街道，有梧桐树"
+
+acts:
+  - id: act_1
+    title: "相遇与试探"
+    scenes:
+      - scene_001
+      - scene_002
+      - scene_003
+      - scene_004
+      - scene_005
+      - scene_006
+
+scenes:
+  - id: scene_001
+    slugline:
+      int_ext: interior
+      location_id: loc_bookstore
+      time_of_day: day
+      heading: "内景 晚风书店 - 日"
+    summary: "周默首次进入书店，与苏晚因《神经漫游者》相遇"
+    source_refs:
+      - chapter_id: chapter_01
+        excerpt: "周默在一个寻常的周二下午推开了晚风书店的门。风铃叮当作响。柜台后坐着一个扎马尾的女孩，头也不抬地说：「随便看。」"
+        paragraph_range: [0, 2]
+    characters_present:
+      - char_zhou_mo
+      - char_su_wan
+    elements:
+      - type: action
+        text: |
+          一个寻常的周二下午。
+          周默推开门，风铃叮当作响。
+          柜台后，苏晚扎着马尾，目光落在书上，没有抬头。
+      - type: dialogue
+        character_id: char_su_wan
+        lines: "随便看。"
+      - type: action
+        text: |
+          周默走向科幻小说区。书架整齐但书目不多。
+          他在《神经漫游者》前停下，伸手——
+          另一只手几乎同时伸来。
+      - type: dialogue
+        character_id: char_zhou_mo
+        parenthetical: "惊讶"
+        lines: "你也喜欢这本？"
+      - type: action
+        text: 苏晚抬头，嘴角微微上扬。
+      - type: dialogue
+        character_id: char_su_wan
+        lines: "它摆在我店里三个月了，还没人买。你是第一个伸手的人。"
+      - type: dialogue
+        character_id: char_zhou_mo
+        lines: "我叫周默。"
+      - type: dialogue
+        character_id: char_su_wan
+        lines: "苏晚。你看你的，不用管我。"
+      - type: action
+        text: |
+          周默翻开书。窗外梧桐树的影子投在玻璃上，晃来晃去。
+          他在书店里待了整整一个下午。
+    estimated_duration_min: 2.5
+
+  - id: scene_002
+    slugline:
+      int_ext: interior
+      location_id: loc_bookstore
+      time_of_day: day
+      heading: "内景 晚风书店 - 日（次日）"
+    summary: "周默再来书店，苏晚态度变冷，《神经漫游者》消失"
+    source_refs:
+      - chapter_id: chapter_02
+        excerpt: "第二天，周默再次来到晚风书店。苏晚的态度明显冷了许多。她正在整理书架，看见周默进来，只是淡淡地点了点头。"
+        paragraph_range: [0, 2]
+    characters_present:
+      - char_zhou_mo
+      - char_su_wan
+    elements:
+      - type: action
+        text: 次日。苏晚正在整理书架，看见周默进来，淡淡地点头。
+      - type: dialogue
+        character_id: char_zhou_mo
+        lines: "昨天谢谢你没把书买走，我想再翻翻。"
+      - type: dialogue
+        character_id: char_su_wan
+        lines: "书还在那儿。"
+      - type: action
+        text: 周默走向科幻区。《神经漫游者》不见了。
+      - type: dialogue
+        character_id: char_zhou_mo
+        lines: "那本书呢？"
+      - type: action
+        text: 苏晚停下手里的活，沉默了几秒。
+      - type: dialogue
+        character_id: char_su_wan
+        lines: "有人预定了。"
+      - type: dialogue
+        character_id: char_zhou_mo
+        lines: "明明昨天还在——"
+      - type: dialogue
+        character_id: char_su_wan
+        parenthetical: "打断，语气生硬"
+        lines: "我说有人预定了。"
+      - type: action
+        text: |
+          周默愣在原地。苏晚的手指微微发抖。
+          她转身走向里间，留给他一个背影。
+    estimated_duration_min: 2.0
+
+  - id: scene_003
+    slugline:
+      int_ext: exterior
+      location_id: loc_bookstore_street
+      time_of_day: day
+      heading: "外景 晚风书店门口 - 日"
+    summary: "周默空手离开书店"
+    source_refs:
+      - chapter_id: chapter_02
+        excerpt: "周默在书店里转了一圈，什么也没买，推门离开。风铃再次响起，这次听起来有些刺耳。"
+        paragraph_range: [6, 7]
+    characters_present:
+      - char_zhou_mo
+      - char_su_wan
+    elements:
+      - type: action
+        text: |
+          周默在书店里转了一圈，什么也没买。
+          他推门离开，风铃响起。
+      - type: action
+        text: |
+          里间。苏晚探出头，望着周默远去的背影，欲言又止。
+    estimated_duration_min: 0.5
+
+  - id: scene_004
+    slugline:
+      int_ext: interior
+      location_id: loc_bookstore
+      time_of_day: night
+      heading: "内景 晚风书店 - 夜"
+    summary: "暴雨夜，周默避雨闯入书店"
+    source_refs:
+      - chapter_id: chapter_03
+        excerpt: "第三天的傍晚，一场暴雨毫无预兆地倾盆而下。周默没带伞，跑进最近的晚风书店避雨。店里没有开灯，只有柜台上一盏小台灯亮着。"
+        paragraph_range: [0, 2]
+    characters_present:
+      - char_zhou_mo
+      - char_su_wan
+    elements:
+      - type: action
+        text: |
+          第三天傍晚。暴雨倾盆。
+          周默没带伞，冲进晚风书店。
+          店里只亮着柜台上一盏小台灯。
+      - type: action
+        text: |
+          苏晚坐在柜台后，面前摊着一本笔记本。
+          看见浑身湿透的周默，她愣了一下，起身从里间拿出一条毛巾。
+      - type: dialogue
+        character_id: char_su_wan
+        lines: "擦擦。"
+      - type: dialogue
+        character_id: char_zhou_mo
+        parenthetical: "低声"
+        lines: "谢谢。"
+      - type: action
+        text: 沉默。雨点敲打玻璃。
+    estimated_duration_min: 1.5
+
+  - id: scene_005
+    slugline:
+      int_ext: interior
+      location_id: loc_bookstore
+      time_of_day: night
+      heading: "内景 晚风书店 - 夜（连续）"
+    summary: "苏晚坦白撒谎，周默发现书的秘密"
+    source_refs:
+      - chapter_id: chapter_03
+        excerpt: "「《神经漫游者》是我自己要留的。」苏晚忽然开口，「昨天……我撒谎了。」"
+        paragraph_range: [4, 8]
+    characters_present:
+      - char_zhou_mo
+      - char_su_wan
+    elements:
+      - type: dialogue
+        character_id: char_su_wan
+        parenthetical: "忽然开口"
+        lines: "《神经漫游者》是我自己要留的。昨天……我撒谎了。"
+      - type: action
+        text: 周默抬起头。
+      - type: dialogue
+        character_id: char_su_wan
+        parenthetical: "声音很轻"
+        lines: |
+          有个出版社的编辑说，开独立书店的人不应该只看科幻小说。
+          我把书收起来了。对不起。
+      - type: action
+        text: |
+          周默把毛巾搭在椅背上，走到科幻区。
+          书架最下层，《神经漫游者》被小心地横放着。
+          他取下来，翻到扉页——上面有一行苏晚的字。
+      - type: action
+        text: "扉页特写：「送给第一个伸手的人。」"
+      - type: dialogue
+        character_id: char_zhou_mo
+        lines: "我不买，但我可以借吗？"
+      - type: action
+        text: 苏晚看着他，终于笑了。
+      - type: dialogue
+        character_id: char_su_wan
+        lines: "借可以。但每次来，得帮我整理十分钟书架。"
+      - type: dialogue
+        character_id: char_zhou_mo
+        lines: "成交。"
+    estimated_duration_min: 3.0
+
+  - id: scene_006
+    slugline:
+      int_ext: exterior
+      location_id: loc_bookstore_street
+      time_of_day: night
+      heading: "外景 晚风书店门口 - 夜"
+    summary: "雨停，周默离开，风铃第三次响起"
+    source_refs:
+      - chapter_id: chapter_03
+        excerpt: "雨小了。周默推开书店的门，风铃第三次响起——这次，听起来像是某种开始。"
+        paragraph_range: [9, 9]
+    characters_present:
+      - char_zhou_mo
+    elements:
+      - type: action
+        text: 雨小了。
+      - type: action
+        text: |
+          周默推开书店的门。风铃第三次响起。
+      - type: transition
+        text: "淡出。"
+    estimated_duration_min: 0.5
+
+warnings:
+  - code: TIME_INFERRED
+    scene_id: scene_001
+    message: "原文仅提及「周二下午」，time_of_day 设为 day"
+    severity: warning
+
+  - code: TIME_INFERRED
+    scene_id: scene_004
+    message: "原文为「第三天傍晚」暴雨，scene_004/005 设为 night"
+    severity: warning
+
+  - code: DIALOGUE_SYNTHESIZED
+    scene_id: scene_003
+    message: "苏晚「欲言又止」为叙述性描写，外化为动作元素，无对白"
+    severity: info
+
+  - code: SCENE_SPLIT
+    scene_id: scene_003
+    message: "chapter_02 末尾离开书店段落拆为独立场次 scene_003"
+    severity: info
+
+  - code: SCENE_SPLIT
+    scene_id: scene_005
+    message: "chapter_03 坦白与借书段落合并为 scene_005，与避雨入场 scene_004 拆分"
+    severity: info
+
+  - code: INNER_MONOLOGUE_OMITTED
+    scene_id: scene_002
+    message: "原文「他不知道的是……」叙述视角已改为苏晚可见动作"
+    severity: info
