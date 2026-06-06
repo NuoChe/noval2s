@@ -1,7 +1,7 @@
 # 用户使用指南
 
-> 版本：1.0  
-> 最后更新：2026-06-05
+> 版本：2.0  
+> 最后更新：2026-06-06
 
 ---
 
@@ -25,8 +25,10 @@ pip install -e .
 
 # 配置 API Key
 cp .env.example .env
-# 编辑 .env，填入 LLM_API_KEY
+# 编辑 .env，填入至少一个模型的 API Key 及 AUTH_SECRET
 ```
+
+V2 支持五个预置模型，各需独立 Key（详见 [§4 Web UI 与模型配置](#4-web-ui-与模型配置)）。
 
 ### 2.2 第一次转换
 
@@ -79,7 +81,7 @@ novel2script convert examples/sample-novel-chapters.txt -o my-screenplay.yaml
 项目内置若干公有领域小说样本，位于 `examples/novels/`，可直接用于 CLI 或 Web UI 测试：
 
 ```bash
-novel2script convert examples/novels/niehaihua.txt -o niehaihua.yaml
+novel2script convert examples/novels/孽海花.txt -o niehaihua.yaml
 ```
 
 样本清单见 `examples/novels/manifest.json`（来源、作者、license）。如需更新样本：
@@ -115,26 +117,121 @@ python scripts/fetch_pd_novels.py --chapters 3 --simplified
 
 ---
 
-## 4. 命令行用法
+## 4. Web UI 与模型配置
 
-### 4.1 基本命令
+### 4.1 启动 Web UI
+
+```bash
+novel2script serve
+# 浏览器打开 http://127.0.0.1:8000
+```
+
+### 4.2 注册与登录（V2 Demo）
+
+Web 端转换功能**需先登录**：
+
+1. 点击右上角「登录」
+2. 切换至「注册」Tab，输入邮箱与密码（至少 6 位）
+3. 注册成功后自动登录；或切换回「登录」Tab 使用已有账号
+4. 登录后转换表单解锁，顶栏显示邮箱与「退出」按钮
+
+**演示账号：** 若管理员在 `.env` 配置了 `AUTH_DEMO_USERS=admin@demo.local:demo123`，可直接使用该账号登录。
+
+> Auth 模块为 Demo 级别，不含邮箱验证与找回密码，不适用于生产环境。
+
+### 4.3 选择 AI 模型
+
+登录后，在「选择 AI 模型」区域点击五张卡片之一：
+
+| 模型 | model_id | 所需环境变量 |
+|------|----------|--------------|
+| GPT-4o Mini | `openai-gpt-4o-mini` | `OPENAI_API_KEY` 或 `LLM_API_KEY` |
+| 通义千问 Plus | `qwen-plus` | `DASHSCOPE_API_KEY` |
+| 智谱 GLM-5.1 | `zhipu-glm-5.1` | `ZAI_API_KEY` |
+| Kimi 32K | `kimi-moonshot-32k` | `MOONSHOT_API_KEY` |
+| DeepSeek Chat | `deepseek-chat` | `DEEPSEEK_API_KEY` |
+
+- 灰色卡片表示管理员未配置对应 Key，不可选
+- 浏览器会记住上次选择的模型（localStorage）
+- 转换完成后，YAML 的 `meta.adaptation.model` 字段记录实际使用的模型
+
+### 4.4 各模型 `.env` 配置示例
+
+**OpenAI（默认）：**
+
+```env
+DEFAULT_MODEL_ID=openai-gpt-4o-mini
+OPENAI_API_KEY=sk-your-openai-key
+```
+
+**通义千问（DashScope 兼容模式）：**
+
+```env
+DASHSCOPE_API_KEY=sk-your-dashscope-key
+# API 地址由系统自动设置为兼容模式 endpoint
+```
+
+**智谱 GLM：**
+
+```env
+ZAI_API_KEY=your-zhipu-api-key
+```
+
+**Kimi（Moonshot）：**
+
+```env
+MOONSHOT_API_KEY=sk-your-moonshot-key
+```
+
+**DeepSeek：**
+
+```env
+DEEPSEEK_API_KEY=sk-your-deepseek-key
+# API 地址由系统自动设置为 https://api.deepseek.com
+# 亦可通过 CLI: --model-id deepseek-chat
+```
+
+**Auth Demo：**
+
+```env
+AUTH_SECRET=use-a-long-random-string-here
+AUTH_DEMO_USERS=demo@example.com:demo123
+```
+
+完整配置说明见 [V2-TECH-SPEC.md](./V2-TECH-SPEC.md)。
+
+### 4.5 Web 转换步骤
+
+1. 登录
+2. 选择模型
+3. 填写作品标题/作者（可选）
+4. 上传 TXT/MD 文件
+5. 点击「开始转换」，等待完成
+6. 预览 YAML、下载或复制
+
+---
+
+## 5. 命令行用法
+
+### 5.1 基本命令
 
 ```bash
 novel2script convert <输入文件> -o <输出文件.yaml>
 ```
 
-### 4.2 常用选项
+### 5.2 常用选项
 
 | 选项 | 说明 | 示例 |
 |------|------|------|
 | `-o, --output` | 输出 YAML 路径 | `-o screenplay.yaml` |
-| `--model` | 指定 LLM 模型 | `--model gpt-4o` |
-| `--provider` | 指定 LLM 提供商 | `--provider openai` |
+| `--model-id` | V2：指定预置模型 ID | `--model-id qwen-plus` |
+| `--model` | 指定 LLM 模型（兼容） | `--model gpt-4o` |
+| `--provider` | 指定 LLM 提供商（兼容） | `--provider openai` |
 | `--title` | 覆盖作品标题 | `--title "晚风书店"` |
 | `--author` | 覆盖作者名 | `--author "张三"` |
 | `--validate-only` | 仅校验已有 YAML | `--validate-only out.yaml` |
 
-### 4.3 使用本地模型（Ollama）
+### 5.3 使用本地模型（Ollama）
 
 ```bash
 export LLM_PROVIDER=ollama
@@ -146,9 +243,9 @@ novel2script convert input.txt -o output.yaml
 
 ---
 
-## 5. 理解输出
+## 6. 理解输出
 
-### 5.1 YAML 剧本结构
+### 6.1 YAML 剧本结构
 
 输出文件遵循 [YAML Schema 规范](./YAML-SCHEMA.md)，核心部分：
 
@@ -161,7 +258,7 @@ scenes:         # 场次列表（核心内容）
 warnings:       # AI 推断/待确认项
 ```
 
-### 5.2 场次（Scene）结构
+### 6.2 场次（Scene）结构
 
 每场戏包含：
 
@@ -182,7 +279,7 @@ warnings:       # AI 推断/待确认项
       lines: "随便看。"
 ```
 
-### 5.3 元素类型
+### 6.3 元素类型
 
 | 类型 | 含义 | 编辑建议 |
 |------|------|----------|
@@ -191,7 +288,7 @@ warnings:       # AI 推断/待确认项
 | `voiceover` | 画外音/旁白 | 尽量少用，考虑改为 action 或 dialogue |
 | `transition` | 转场 | 如「切至」「淡入」 |
 
-### 5.4 转换报告
+### 6.4 转换报告
 
 `*.report.json` 示例：
 
@@ -215,9 +312,9 @@ warnings:       # AI 推断/待确认项
 
 ---
 
-## 6. 编辑工作流
+## 7. 编辑工作流
 
-### 6.1 推荐流程
+### 7.1 推荐流程
 
 ```
 1. 阅读 conversion report，了解整体规模与 warnings
@@ -229,7 +326,7 @@ warnings:       # AI 推断/待确认项
 7. 运行 validate-only 确认格式正确
 ```
 
-### 6.2 常见编辑操作
+### 7.2 常见编辑操作
 
 #### 修改对白
 
@@ -277,7 +374,7 @@ warnings:       # AI 推断/待确认项
   text: "周默微微笑了笑，把书放回架上。"
 ```
 
-### 6.3 版本管理
+### 7.3 版本管理
 
 YAML 文件非常适合 Git 管理：
 
@@ -293,7 +390,7 @@ git commit -m "精修第 1-3 场对白"
 
 ---
 
-## 7. 理解 Warnings
+## 8. 理解 Warnings
 
 Warnings 是 AI Transparent 机制的核心。请重点审核以下类型：
 
@@ -308,7 +405,7 @@ Warnings 是 AI Transparent 机制的核心。请重点审核以下类型：
 
 ---
 
-## 8. 校验
+## 9. 校验
 
 编辑完成后，校验 YAML 格式：
 
@@ -330,7 +427,15 @@ Result: PASS_WITH_WARNINGS
 
 ---
 
-## 9. 常见问题
+## 10. 常见问题
+
+### Q: Web 提示「请先登录」？
+
+V2 Web UI 要求登录后才能转换。点击右上角「登录」注册或登录账号。
+
+### Q: 某个模型卡片是灰色的？
+
+对应 API Key 未在服务器 `.env` 中配置。请联系管理员配置，或使用 CLI 指定其他 provider。
 
 ### Q: 转换时间很长？
 
@@ -358,7 +463,7 @@ novel2script export screenplay.yaml -f fountain -o screenplay.fountain
 
 ---
 
-## 10. 获取帮助
+## 11. 获取帮助
 
 ```bash
 novel2script --help

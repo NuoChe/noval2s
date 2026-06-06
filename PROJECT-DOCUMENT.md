@@ -1,9 +1,10 @@
 # AI 小说转剧本工具 — 完整项目文档
 
 > 产品名称：Novel2Script  
-> 版本：1.0  
-> 最后更新：2026-06-05  
-> 本文档合并了项目全部设计与规范文件，便于评审与提交。
+> 版本：2.0  
+> 最后更新：2026-06-06  
+> 本文档合并了项目全部设计与规范文件，便于评审与提交。  
+> V2 专项技术方案：[docs/V2-TECH-SPEC.md](./docs/V2-TECH-SPEC.md)
 
 ---
 
@@ -15,6 +16,7 @@
 4. [MVP 实现计划](#4-mvp-实现计划)
 5. [用户使用指南](#5-用户使用指南)
 6. [示例资产说明](#6-示例资产说明)
+7. [V2 技术方案摘要](#7-v2-技术方案摘要)
 
 ---
 # 1. 产品需求文档（PRD）
@@ -26,7 +28,7 @@
 | 产品代号 | Novel2Script |
 | 文档作者 | 产品团队 |
 | 目标读者 | 开发团队、评审方、作者用户 |
-| 关联文档 | [YAML-SCHEMA.md](./YAML-SCHEMA.md)、[ARCHITECTURE.md](./ARCHITECTURE.md) |
+| 关联文档 | [YAML-SCHEMA.md](./YAML-SCHEMA.md)、[ARCHITECTURE.md](./ARCHITECTURE.md)、[V2-TECH-SPEC.md](./V2-TECH-SPEC.md) |
 
 ---
 
@@ -111,12 +113,23 @@ MVP 阶段优先服务 **用户 A（网文/出版作者）**，兼顾用户 B �
 | US-05 | 作者 | 作为作者，我希望获得转换报告（场次数、角色数、警告项），以便评估初稿规模 | P1 |
 | US-06 | 编剧 | 作为编剧，我希望角色在全文中 ID 一致，以便统计戏份和检查一致性 | P1 |
 | US-07 | 作者 | 作为作者，我希望 YAML 可纳入 Git 版本管理，以便与合作者协作修改 | P2 |
+| US-08 | 作者 | 作为作者，我希望在 Web UI 中选择不同的 AI 模型，以便按成本与质量需求切换 | P1 |
+| US-09 | 作者 | 作为新用户，我希望注册账号并登录，以便使用 Web 转换功能 | P1 |
+| US-10 | 作者 | 作为已登录用户，我希望只有登录后才能提交转换，以便平台能追踪使用情况（Demo） | P1 |
 
 ### 5.2 用户旅程
+
+**CLI：**
 
 ```
 上传小说 → 等待转换 → 下载 YAML → 阅读转换报告
     → 对照 source_refs 审阅 → 编辑 YAML → （可选）导出 Fountain/PDF
+```
+
+**Web V2：**
+
+```
+打开 Web UI → 注册/登录 → 选择 AI 模型 → 上传小说 → 等待转换 → 下载 YAML
 ```
 
 ---
@@ -154,13 +167,27 @@ MVP 阶段优先服务 **用户 A（网文/出版作者）**，兼顾用户 B �
 - 输出简要报告：场次数、角色数、地点数、警告数
 - 列出所有 warning 供作者快速定位
 
-### 6.2 V1.1 功能（P1/P2，MVP 后）
+### 6.2 V2 功能（P1）
+
+#### F-06 多模型切换
+
+- Web UI 五模型卡片：GPT-4o Mini、通义千问 Plus、智谱 GLM-5.1、Kimi 32K、DeepSeek Chat
+- 按 `.env` Key 配置决定可用模型；CLI `--model-id`
+
+#### F-07 用户认证 Demo
+
+- Web 注册/登录；未登录不可 `/api/convert`；SQLite + Session Cookie（非生产）
+
+#### F-08 Web UI 改版
+
+- 顶栏、模型选择区、登录 Modal；见 [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md)
+
+### 6.3 后续版本功能（P1/P2）
 
 | 功能 | 描述 | 优先级 |
 |------|------|--------|
 | Fountain 导出 | YAML → `.fountain` 文件 | P1 |
 | PDF 导出 | 标准剧本排版 PDF | P2 |
-| Web UI | 浏览器上传 + 在线预览 | P1 |
 | 场次重写 | 选中某场，AI 按指令重写 | P2 |
 | 角色关系图 | 可视化角色出场关系 | P2 |
 | 场次时间线 | 按时间/地点排列场次 | P2 |
@@ -175,7 +202,7 @@ MVP 阶段优先服务 **用户 A（网文/出版作者）**，兼顾用户 B �
 | **可用性** | CLI 一条命令完成转换；错误信息清晰可操作 |
 | **可靠性** | 转换成功率 ≥ 95%（Schema 校验 PASS 或 PASS_WITH_WARNINGS） |
 | **隐私** | 支持本地模型（Ollama）部署，原文不出本地；云 API 模式需明确告知用户 |
-| **可扩展性** | LLM 提供商可配置（OpenAI / 通义 / DeepSeek / Ollama） |
+| **可扩展性** | V2 Web 五模型切换；CLI 仍支持 Ollama |
 | **可维护性** | Pydantic 模型与 YAML Schema 文档同步维护 |
 
 ---
@@ -217,7 +244,7 @@ MVP 阶段优先服务 **用户 A（网文/出版作者）**，兼顾用户 B �
 | 手工改编 | 质量最高 | 成本高、周期长 |
 | ChatGPT 直接转换 | 零门槛 | 输出非结构化、无溯源、格式不稳定 |
 | Final Draft 导入 | 行业标准 | 无 AI 能力，需手工输入 |
-| **Novel2Script** | 结构化 YAML + 溯源 + 可编辑 + 可校验 | MVP 阶段无 Web UI |
+| **Novel2Script** | 结构化 YAML + 溯源 + Web 多模型 + 可校验 | V2 Auth 为 Demo 级别 |
 
 ---
 
@@ -661,6 +688,8 @@ warnings:
 ---
 
 # 3. 技术架构文档
+
+> 完整 v2.0 架构见 [docs/ARCHITECTURE.md](./ARCHITECTURE.md)；V2 增量见 [docs/V2-TECH-SPEC.md](./V2-TECH-SPEC.md)。
 
 ## 3.1 架构概览
 
@@ -1276,13 +1305,14 @@ novel2script = "src.cli.main:app"
 
 ---
 
-## 9. 后续路线图（MVP 后）
+## 9. 后续路线图
 
-| 版本 | 时间 | 功能 |
+| 版本 | 状态 | 功能 |
 |------|------|------|
-| V1.1 | +2 周 | Fountain 导出、Web UI |
-| V1.2 | +2 周 | 场次 AI 重写、多轮对话 |
-| V2.0 | +4 周 | 英文支持、PDF 导出、角色关系图 |
+| V1.0 | 已完成 | CLI、YAML Schema、转换流水线、Web UI 基础版 |
+| **V2.0** | **当前** | 五模型切换（含 DeepSeek）、Auth Demo、Web UI 改版（[V2-TECH-SPEC.md](./V2-TECH-SPEC.md)） |
+| V2.1 | 规划 | Fountain 导出 |
+| V3.0 | 规划 | 英文支持、PDF 导出、角色关系图、场次 AI 重写 |
 
 
 ---
@@ -1641,3 +1671,46 @@ novel2script convert --help
 | `examples/sample-screenplay.yaml` | 符合 Schema v1.0 的完整剧本输出，含 6 个场次、全部 element 类型与 warnings 样例 |
 
 输入小说与输出剧本内容一一对应，可用于端到端回归测试与 Schema 校验演示。
+
+---
+
+# 7. V2 技术方案摘要
+
+> 完整方案：[docs/V2-TECH-SPEC.md](./docs/V2-TECH-SPEC.md)  
+> UI 规范：[docs/DESIGN-SYSTEM.md](./docs/DESIGN-SYSTEM.md)  
+> 变更记录：[docs/CHANGELOG.md](./docs/CHANGELOG.md)
+
+## 7.1 V2 核心能力
+
+| 能力 | 说明 |
+|------|------|
+| 五模型切换 | OpenAI GPT-4o Mini、通义千问 Plus、智谱 GLM-5.1、Kimi 32K、DeepSeek Chat |
+| 模型注册表 | `llm/registry.py` + `GET /api/models` |
+| 请求级 LLM 配置 | 修复 v1 全局 settings mutation |
+| Auth Demo | 注册/登录；`/api/convert` 需 Session |
+| Web UI 改版 | TopBar、ModelCard、AuthModal（纸墨 V2 Studio） |
+
+## 7.2 五模型一览
+
+| model_id | 显示名 | env_key |
+|----------|--------|---------|
+| `openai-gpt-4o-mini` | GPT-4o Mini | `OPENAI_API_KEY` / `LLM_API_KEY` |
+| `qwen-plus` | 通义千问 Plus | `DASHSCOPE_API_KEY` |
+| `zhipu-glm-5.1` | 智谱 GLM-5.1 | `ZAI_API_KEY` |
+| `kimi-moonshot-32k` | Kimi 32K | `MOONSHOT_API_KEY` |
+| `deepseek-chat` | DeepSeek Chat | `DEEPSEEK_API_KEY` |
+
+## 7.3 新增 API
+
+| 方法 | 路径 | 鉴权 |
+|------|------|------|
+| GET | `/api/models` | 无 |
+| POST | `/api/auth/register` | 无 |
+| POST | `/api/auth/login` | 无 |
+| POST | `/api/auth/logout` | 需登录 |
+| GET | `/api/auth/me` | 需登录 |
+| POST | `/api/convert` | **需登录**（V2 变更） |
+
+## 7.4 不在 V2 范围
+
+Fountain/PDF 导出、英文支持、角色关系图、生产级 OAuth — 见 V2.1 / V3 路线图。

@@ -117,9 +117,10 @@ class LiteLLMClient:
 class MockLLMClient:
     """Test double that returns pre-configured responses by prompt keyword."""
 
-    def __init__(self, responses: dict[str, dict | list[dict]]) -> None:
+    def __init__(self, responses: dict[str, dict | list[dict]], *, model_name: str = "mock-model") -> None:
         self.responses = responses
         self.calls: list[tuple[str, str]] = []
+        self.model_name = model_name
 
     def complete_json(
         self,

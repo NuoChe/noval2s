@@ -202,6 +202,7 @@ class ConversionOptions(BaseModel):
     author: str | None = None
     model: str | None = None
     provider: str | None = None
+    model_id: str | None = None
 
 
 def build_meta(

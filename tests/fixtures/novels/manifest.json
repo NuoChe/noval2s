@@ -11,7 +11,7 @@
       "license": "Public Domain",
       "chapters_included": 3,
       "word_count": 12341,
-      "file": "niehaihua.txt"
+      "file": "孽海花.txt"
     },
     {
       "id": "guanchang_xianxingji",
@@ -21,7 +21,7 @@
       "license": "Public Domain",
       "chapters_included": 3,
       "word_count": 22047,
-      "file": "guanchang_xianxingji.txt"
+      "file": "官场现形记.txt"
     },
     {
       "id": "ershi_nian",
@@ -31,7 +31,7 @@
       "license": "Public Domain",
       "chapters_included": 3,
       "word_count": 10217,
-      "file": "ershi_nian.txt"
+      "file": "二十年目睹之怪现状.txt"
     },
     {
       "id": "laocan_youji",
@@ -41,7 +41,7 @@
       "license": "Public Domain",
       "chapters_included": 3,
       "word_count": 12159,
-      "file": "laocan_youji.txt"
+      "file": "老残游记.txt"
     }
   ]
 }

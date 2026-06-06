@@ -29,24 +29,36 @@ def convert(
     input: Path = typer.Argument(..., help="Input novel file (TXT/MD)", exists=True),
     output: Path = typer.Option(..., "-o", "--output", help="Output YAML path"),
     model: Optional[str] = typer.Option(None, "--model", help="LLM model name"),
+    model_id: Optional[str] = typer.Option(None, "--model-id", help="V2 preset model id"),
     provider: Optional[str] = typer.Option(None, "--provider", help="LLM provider"),
     title: Optional[str] = typer.Option(None, "--title", help="Override work title"),
     author: Optional[str] = typer.Option(None, "--author", help="Override author name"),
 ) -> None:
     """Convert a novel (3+ chapters) to structured YAML screenplay."""
     settings = get_settings()
-    if provider:
-        settings.llm_provider = provider
-    if model:
-        settings.llm_model = model
+    if model_id:
+        from novel2script.llm.registry import settings_for_model_id
+
+        settings = settings_for_model_id(settings, model_id)
+    else:
+        if provider:
+            settings.llm_provider = provider
+        if model:
+            settings.llm_model = model
 
     if not settings.llm_api_key and settings.llm_provider != "ollama":
         typer.echo(
-            "Warning: LLM_API_KEY not set. Configure .env or use --provider ollama.",
+            "Warning: LLM API key not set. Configure .env or use --model-id with a configured provider.",
             err=True,
         )
 
-    options = ConversionOptions(title=title, author=author, model=model, provider=provider)
+    options = ConversionOptions(
+        title=title,
+        author=author,
+        model=model,
+        provider=provider,
+        model_id=model_id,
+    )
 
     typer.echo(f"Converting {input} ...")
     result = convert_file(input, output, options, settings=settings)

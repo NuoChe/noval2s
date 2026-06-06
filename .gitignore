@@ -18,3 +18,4 @@ scripts/.cache/
 scripts/fetch_log.txt
 .coverage
 htmlcov/
+data/demo.db

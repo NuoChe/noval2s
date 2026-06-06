@@ -32,10 +32,17 @@ def convert_novel(
 ) -> ConversionResult:
     settings = settings or get_settings()
     options = options or ConversionOptions()
-    llm = llm or LiteLLMClient(settings)
-
-    model = options.model or settings.llm_model
     start = time.time()
+
+    if options.model_id:
+        from novel2script.llm.registry import litellm_model_name, resolve_model, settings_for_model_id
+
+        settings = settings_for_model_id(settings, options.model_id)
+        llm = llm or LiteLLMClient(settings)
+        model = litellm_model_name(resolve_model(options.model_id))
+    else:
+        llm = llm or LiteLLMClient(settings)
+        model = options.model or llm.model_name
 
     chapters = parse_chapters(text, settings)
     registry = EntityRegistry()

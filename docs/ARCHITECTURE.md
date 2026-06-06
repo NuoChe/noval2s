@@ -1,7 +1,8 @@
 # 技术架构文档
 
-> 版本：1.0  
-> 最后更新：2026-06-05
+> 版本：2.0  
+> 最后更新：2026-06-06  
+> V2 详细方案：[V2-TECH-SPEC.md](./V2-TECH-SPEC.md)
 
 ---
 
@@ -57,18 +58,25 @@ flowchart TB
 | YAML 处理 | PyYAML / ruamel.yaml | latest | ruamel.yaml 保留格式与注释 |
 | CLI | Typer | latest | 类型提示友好，自动生成帮助 |
 | 测试 | pytest | latest | 单元测试 + fixture 回归 |
-| HTTP（可选 Web） | FastAPI | latest | 异步、自动 OpenAPI 文档 |
+| HTTP / Web UI | FastAPI + Jinja2 | latest | 异步、服务端渲染 Web UI |
+| 认证 Demo | itsdangerous + bcrypt | latest | 签名 Session Cookie |
+| 用户存储 Demo | SQLite | 3.x | 单文件 `data/demo.db` |
 
-### 2.1 LLM 提供商支持
+### 2.1 LLM 提供商支持（V2 五模型）
 
-| 提供商 | 接入方式 | 适用场景 |
-|--------|----------|----------|
-| OpenAI | API Key | 质量优先、演示 |
-| 通义千问 | API Key | 国内部署 |
-| DeepSeek | API Key | 性价比 |
-| Ollama | 本地 HTTP | 隐私优先、离线 |
+V2 通过 `ModelRegistry`（`llm/registry.py`）统一管理五款预置模型，运行时按 `model_id` 解析 provider、LiteLLM 模型名、base_url 与 API Key。
 
-通过环境变量 `LLM_PROVIDER` 和 `LLM_MODEL` 配置，代码层无硬编码。
+| model_id | 提供商 | LiteLLM 模型 | 环境变量 | 适用场景 |
+|----------|--------|--------------|----------|----------|
+| `openai-gpt-4o-mini` | OpenAI | `gpt-4o-mini` | `OPENAI_API_KEY` / `LLM_API_KEY` | 质量稳定、演示 |
+| `qwen-plus` | 通义千问 | `dashscope/qwen-plus` | `DASHSCOPE_API_KEY` | 国内部署、中文理解 |
+| `zhipu-glm-5.1` | 智谱 | `zai/glm-5.1` | `ZAI_API_KEY` | 长文本、推理 |
+| `kimi-moonshot-32k` | Kimi | `moonshot/moonshot-v1-32k` | `MOONSHOT_API_KEY` | 长上下文改编 |
+| `deepseek-chat` | DeepSeek | `deepseek/deepseek-chat` | `DEEPSEEK_API_KEY` | 性价比、中文推理 |
+
+**向后兼容：** CLI 仍支持 v1 的 `LLM_PROVIDER` + `LLM_MODEL`；Ollama 可通过 CLI `--provider ollama` 使用，但不在 V2 Web UI 预置模型卡片中。
+
+Web UI 通过 `GET /api/models` 暴露目录；仅 env Key 已配置的模型标记为 `available`。
 
 ---
 
@@ -140,30 +148,41 @@ novel2script/
 │   ├── __init__.py
 │   ├── cli/
 │   │   └── main.py              # Typer CLI 入口
+│   ├── api/                     # FastAPI Web UI（V1 已有，V2 扩展）
+│   │   ├── app.py
+│   │   ├── routes.py
+│   │   ├── templates/
+│   │   └── static/
+│   ├── auth/                    # V2：登录注册 Demo
+│   │   ├── models.py
+│   │   ├── database.py
+│   │   ├── service.py
+│   │   ├── session.py
+│   │   ├── deps.py
+│   │   └── routes.py
 │   ├── parser/
-│   │   └── chapter.py           # 章节边界识别
+│   │   └── chapter.py
 │   ├── extractor/
-│   │   └── entity.py            # 角色/地点抽取
+│   │   └── entity.py
 │   ├── adapter/
-│   │   ├── scene_adapter.py     # 场次改编主逻辑
-│   │   └── prompts.py           # Prompt 模板
+│   │   ├── scene_adapter.py
+│   │   └── prompts.py
 │   ├── models/
-│   │   └── schema.py            # Pydantic 模型（与 YAML-SCHEMA.md 同步）
+│   │   └── schema.py
 │   ├── emitter/
-│   │   └── yaml_writer.py       # YAML 序列化
+│   │   └── yaml_writer.py
 │   ├── validator/
-│   │   └── validate.py          # 校验逻辑
+│   │   └── validate.py
+│   ├── pipeline/
+│   │   └── converter.py
 │   └── llm/
-│       └── client.py            # LLM 统一客户端
+│       ├── client.py            # LiteLLM 统一客户端
+│       └── registry.py          # V2：五模型注册表
+├── data/
+│   └── demo.db                  # V2：SQLite 用户库（运行时生成）
 ├── tests/
-│   ├── test_chapter_parser.py
-│   ├── test_schema_validation.py
-│   ├── test_scene_adapter.py
-│   └── fixtures/
-│       ├── sample_novel.txt
-│       └── expected_output.yaml
-├── examples/                     # 文档示例（与 docs 共享）
-├── docs/                         # 项目文档
+├── examples/
+├── docs/
 ├── pyproject.toml
 └── README.md
 ```
@@ -213,6 +232,27 @@ CHAPTER_PATTERNS = [
 - 调用 Pydantic 模型校验
 - 额外业务规则：章节覆盖度、ID 引用完整性
 - 返回 `ValidationResult(status, warnings, errors)`
+
+#### `llm/registry.py`（V2）
+
+- 定义 `MODEL_CATALOG` 五模型静态注册表
+- `list_models()`：返回全部模型及 `available` 状态（取决于 env Key）
+- `resolve(model_id)`：解析为 `ResolvedModel`，供 `build_llm_client()` 使用
+- 禁止在 Registry 中硬编码 API Key
+
+#### `auth/`（V2 Demo）
+
+- `service.py`：注册、登录、bcrypt 密码哈希
+- `session.py`：`itsdangerous` 签名 Session，HttpOnly Cookie
+- `deps.py`：`get_current_user` FastAPI 依赖，保护 `/api/convert`
+- `routes.py`：`/api/auth/register|login|logout|me`
+- **非生产**：无邮箱验证、OAuth、Refresh Token
+
+#### `api/routes.py`（V2 变更）
+
+- `POST /api/convert` 需登录；接受 `model_id` 表单字段
+- 使用 `Settings.model_copy()` 生成请求级配置，避免污染全局 `get_settings()` 缓存
+- 新增 `GET /api/models` 路由（或在独立 router 中）
 
 ---
 
@@ -322,14 +362,22 @@ flowchart LR
 
 ## 8. 配置项
 
-通过环境变量或 `.env` 文件配置：
+通过环境变量或 `.env` 文件配置。完整模板见 [V2-TECH-SPEC.md §3](./V2-TECH-SPEC.md#3-环境变量与密钥管理)。
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `LLM_PROVIDER` | `openai` | LLM 提供商标识 |
-| `LLM_MODEL` | `gpt-4o` | 模型名称 |
-| `LLM_API_KEY` | — | API 密钥 |
+| `DEFAULT_MODEL_ID` | `openai-gpt-4o-mini` | Web UI 默认选中的 model_id |
+| `OPENAI_API_KEY` | — | OpenAI API 密钥 |
+| `DASHSCOPE_API_KEY` | — | 通义千问 API 密钥 |
+| `ZAI_API_KEY` | — | 智谱 API 密钥 |
+| `MOONSHOT_API_KEY` | — | Kimi API 密钥 |
+| `DEEPSEEK_API_KEY` | — | DeepSeek API 密钥 |
+| `LLM_PROVIDER` | `openai` | CLI 向后兼容 |
+| `LLM_MODEL` | `gpt-4o-mini` | CLI 向后兼容 |
+| `LLM_API_KEY` | — | 向后兼容，等同 `OPENAI_API_KEY` |
 | `LLM_BASE_URL` | — | 自定义 API 地址（Ollama 等） |
+| `AUTH_SECRET` | — | Session 签名密钥（Web Demo 必填） |
+| `AUTH_DEMO_USERS` | — | 可选预置账号 `email:password` |
 | `MAX_CHAPTERS` | `20` | 最大处理章节数 |
 | `MAX_WORDS` | `100000` | 最大处理字数 |
 | `PROMPT_VERSION` | `v1.0` | Prompt 版本号，写入 meta |
@@ -338,12 +386,15 @@ flowchart LR
 
 ## 9. 安全与隐私
 
-|  concern | 方案 |
+| concern | 方案 |
 |----------|------|
 | 原文隐私 | 支持 Ollama 本地部署，数据不出机器 |
-| API Key 安全 | 环境变量注入，不写入代码或日志 |
+| API Key 安全 | 按提供商独立 env 注入；禁止硬编码；日志不记录 Key |
+| Key 隔离 | 各 model_id 绑定独立 env_key，Web 不向客户端暴露 Key |
 | 输出文件 | 本地写入，不上传云端 |
-| 日志 | 不记录原文内容，仅记录章节数/字数/耗时 |
+| 日志 | 不记录原文内容；审计仅记录 user_id + model_id + 耗时 |
+| Web 鉴权 | `/api/convert` 需有效 Session；Demo 级 bcrypt + 签名 Cookie |
+| Session 安全 | HttpOnly、SameSite=Lax；生产需 HTTPS + Secure Cookie |
 
 ---
 
@@ -351,10 +402,12 @@ flowchart LR
 
 | 扩展 | 接口 | 说明 |
 |------|------|------|
-| 新 LLM 提供商 | `llm/client.py` | 实现 `LLMClient` 协议 |
+| 新 LLM 模型 | `llm/registry.py` | 在 `MODEL_CATALOG` 追加条目 |
+| 新 LLM 提供商 | `llm/client.py` | 实现 `LLMClient` 协议或扩展 LiteLLM 前缀 |
 | 新导出格式 | `emitter/` | 添加 `fountain_writer.py` |
 | 新章节格式 | `parser/chapter.py` | 添加 CHAPTER_PATTERNS |
 | Web UI | FastAPI router | 复用 core 流水线 |
+| 生产级认证 | `auth/` | 替换 Demo 为 OAuth/JWT 等 |
 
 ---
 
@@ -385,3 +438,60 @@ export LLM_MODEL=qwen2.5:14b
 export LLM_BASE_URL=http://localhost:11434
 novel2script convert input.txt -o screenplay.yaml
 ```
+
+---
+
+## 12. V2 Web 数据流
+
+V2 在 v1 流水线外包一层 **认证 + 模型选择** 网关，核心改编逻辑不变。
+
+```mermaid
+flowchart TB
+    subgraph browser [浏览器]
+        TopBar[TopBar 用户态]
+        ModelSel[模型卡片]
+        Form[转换表单]
+        AuthModal[登录 Modal]
+    end
+
+    subgraph fastapi [FastAPI]
+        AuthRoutes["/api/auth/*"]
+        ModelsRoute["GET /api/models"]
+        ConvertRoute["POST /api/convert"]
+        AuthDep[get_current_user]
+    end
+
+    subgraph v2modules [V2 模块]
+        ModelReg[ModelRegistry]
+        SessionMgr[SessionManager]
+        SQLite[(demo.db)]
+    end
+
+    subgraph pipeline [v1 核心流水线]
+        Converter[convert_novel]
+        LiteLLM[LiteLLMClient]
+    end
+
+    TopBar --> AuthRoutes
+    AuthModal --> AuthRoutes
+    AuthRoutes --> SessionMgr
+    AuthRoutes --> SQLite
+    ModelSel --> ModelsRoute
+    ModelsRoute --> ModelReg
+    Form -->|"model_id + file + Cookie"| ConvertRoute
+    ConvertRoute --> AuthDep
+    AuthDep --> SessionMgr
+    ConvertRoute --> ModelReg
+    ModelReg --> LiteLLM
+    LiteLLM --> Converter
+```
+
+**请求路径摘要：**
+
+1. 页面加载 → `GET /api/auth/me` 确定登录态；`GET /api/models` 渲染模型卡片
+2. 未登录用户点击转换 → 弹出 AuthModal
+3. 登录成功 → Cookie 写入 → 启用表单
+4. 提交转换 → 服务端校验 Session → `ModelRegistry.resolve(model_id)` → 请求级 `Settings` → `convert_novel()`
+5. 响应 JSON 含 `yaml_content`、`report`；`meta.adaptation.model` 记录实际 LiteLLM 模型名
+
+UI 设计规范见 [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md)。

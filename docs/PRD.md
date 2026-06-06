@@ -1,8 +1,8 @@
 # 产品需求文档（PRD）
 
 > 产品名称：AI 小说转剧本工具（Novel2Script）  
-> 版本：1.0  
-> 最后更新：2026-06-05
+> 版本：2.0  
+> 最后更新：2026-06-06
 
 ---
 
@@ -13,7 +13,7 @@
 | 产品代号 | Novel2Script |
 | 文档作者 | 产品团队 |
 | 目标读者 | 开发团队、评审方、作者用户 |
-| 关联文档 | [YAML-SCHEMA.md](./YAML-SCHEMA.md)、[ARCHITECTURE.md](./ARCHITECTURE.md) |
+| 关联文档 | [YAML-SCHEMA.md](./YAML-SCHEMA.md)、[ARCHITECTURE.md](./ARCHITECTURE.md)、[V2-TECH-SPEC.md](./V2-TECH-SPEC.md) |
 
 ---
 
@@ -98,12 +98,24 @@ MVP 阶段优先服务 **用户 A（网文/出版作者）**，兼顾用户 B �
 | US-05 | 作者 | 作为作者，我希望获得转换报告（场次数、角色数、警告项），以便评估初稿规模 | P1 |
 | US-06 | 编剧 | 作为编剧，我希望角色在全文中 ID 一致，以便统计戏份和检查一致性 | P1 |
 | US-07 | 作者 | 作为作者，我希望 YAML 可纳入 Git 版本管理，以便与合作者协作修改 | P2 |
+| US-08 | 作者 | 作为作者，我希望在 Web UI 中选择不同的 AI 模型（OpenAI / 千问 / 智谱 / Kimi / DeepSeek），以便按成本与质量需求切换 | P1 |
+| US-09 | 作者 | 作为新用户，我希望注册账号并登录，以便使用 Web 转换功能 | P1 |
+| US-10 | 作者 | 作为已登录用户，我希望只有登录后才能提交转换，以便平台能追踪使用情况（Demo） | P1 |
 
 ### 5.2 用户旅程
+
+**CLI 旅程（不变）：**
 
 ```
 上传小说 → 等待转换 → 下载 YAML → 阅读转换报告
     → 对照 source_refs 审阅 → 编辑 YAML → （可选）导出 Fountain/PDF
+```
+
+**Web V2 旅程：**
+
+```
+打开 Web UI → 注册/登录 → 选择 AI 模型 → 上传小说 → 等待转换
+    → 预览/下载 YAML → 阅读转换报告 → 编辑 YAML
 ```
 
 ---
@@ -141,13 +153,34 @@ MVP 阶段优先服务 **用户 A（网文/出版作者）**，兼顾用户 B �
 - 输出简要报告：场次数、角色数、地点数、警告数
 - 列出所有 warning 供作者快速定位
 
-### 6.2 V1.1 功能（P1/P2，MVP 后）
+### 6.2 V2 功能（P1）
+
+#### F-06 多模型切换
+
+- Web UI 提供模型卡片：GPT-4o Mini、通义千问 Plus、智谱 GLM-5.1、Kimi 32K、DeepSeek Chat
+- 仅管理员在 `.env` 中配置了对应 API Key 的模型可选
+- 转换请求携带 `model_id`；输出 `meta.adaptation.model` 记录实际模型
+- CLI 支持 `--model-id` 参数
+
+#### F-07 用户认证 Demo
+
+- Web 端注册（邮箱 + 密码）与登录
+- 未登录不可调用 `/api/convert`
+- Demo 级实现：SQLite + 签名 Session Cookie；**非生产**
+- 可选预置演示账号（`AUTH_DEMO_USERS`）
+
+#### F-08 Web UI 改版
+
+- 新增顶栏（用户态 / 登录按钮）
+- 新增模型选择区、登录/注册 Modal
+- 设计规范见 [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md)
+
+### 6.3 V1.1+ 功能（P1/P2，后续版本）
 
 | 功能 | 描述 | 优先级 |
 |------|------|--------|
 | Fountain 导出 | YAML → `.fountain` 文件 | P1 |
 | PDF 导出 | 标准剧本排版 PDF | P2 |
-| Web UI | 浏览器上传 + 在线预览 | P1 |
 | 场次重写 | 选中某场，AI 按指令重写 | P2 |
 | 角色关系图 | 可视化角色出场关系 | P2 |
 | 场次时间线 | 按时间/地点排列场次 | P2 |
@@ -162,7 +195,7 @@ MVP 阶段优先服务 **用户 A（网文/出版作者）**，兼顾用户 B �
 | **可用性** | CLI 一条命令完成转换；错误信息清晰可操作 |
 | **可靠性** | 转换成功率 ≥ 95%（Schema 校验 PASS 或 PASS_WITH_WARNINGS） |
 | **隐私** | 支持本地模型（Ollama）部署，原文不出本地；云 API 模式需明确告知用户 |
-| **可扩展性** | LLM 提供商可配置（OpenAI / 通义 / DeepSeek / Ollama） |
+| **可扩展性** | LLM 提供商可配置；V2 Web UI 支持五模型切换（OpenAI / 千问 / 智谱 / Kimi / DeepSeek） |
 | **可维护性** | Pydantic 模型与 YAML Schema 文档同步维护 |
 
 ---
@@ -204,7 +237,7 @@ MVP 阶段优先服务 **用户 A（网文/出版作者）**，兼顾用户 B �
 | 手工改编 | 质量最高 | 成本高、周期长 |
 | ChatGPT 直接转换 | 零门槛 | 输出非结构化、无溯源、格式不稳定 |
 | Final Draft 导入 | 行业标准 | 无 AI 能力，需手工输入 |
-| **Novel2Script** | 结构化 YAML + 溯源 + 可编辑 + 可校验 | MVP 阶段无 Web UI |
+| **Novel2Script** | 结构化 YAML + 溯源 + 可编辑 + 可校验 + Web 多模型 | V2 Auth 为 Demo 级别 |
 
 ---
 
